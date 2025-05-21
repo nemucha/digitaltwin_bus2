@@ -2,9 +2,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const messageElement = document.getElementById('message');
     const csvSummaryOutput = document.getElementById('csvSummaryOutput');
     const csvSampleOutput = document.getElementById('csvSampleOutput');
+    const inputContainer = document.getElementById('inputContainer'); // 入力欄全体を囲むコンテナを取得
+    const currentTimeInput = document.getElementById('current-time');
+    const dayOfWeekInput = document.getElementById('dayOfWeek');
 
     // HTML要素の存在チェック
-    if (!messageElement || !csvSummaryOutput || !csvSampleOutput) {
+    if (!messageElement || !csvSummaryOutput || !csvSampleOutput || !inputContainer || !currentTimeInput || !dayOfWeekInput) {
         console.error('HTML要素が見つかりません。必要なIDを持つ要素がHTMLに存在するか確認してください。');
         return;
     }
@@ -12,6 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allCsvData = []; // 全てのCSVデータを格納する3次元配列
 
     try {
+        // 初期状態では入力欄を非表示にする（HTML側でも設定しているが念のため）
+        inputContainer.style.display = 'none';
         messageElement.textContent = `複数のCSVファイルを読み込み中...`;
 
         const startDate = new Date('2025-04-08');
@@ -26,31 +31,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             const fileName = `${year}-${month}-${day}_com2.csv`;
             const filePath = `data/${fileName}`;
 
-            // fetch処理をPromiseとして保存
             filePromises.push(
                 fetch(filePath)
                     .then(response => {
                         if (!response.ok) {
-                            // ファイルが見つからない場合もエラーとして扱わない（スキップする）か、エラーを投げるか選択
-                            // 今回はエラーを投げてcatchブロックで処理する
                             throw new Error(`ファイルが見つからないか、読み込めません: ${filePath} (HTTPステータス: ${response.status})`);
                         }
                         return response.text();
                     })
                     .then(csvText => {
-                        // CSVテキストを二次元配列に変換
                         return csvText.trim().split('\n').map(row => row.split(','));
                     })
                     .catch(error => {
-                        // 特定のファイルのエラーを捕捉し、console.errorに出力するが、全体の処理は続行
                         console.error(`Error loading ${filePath}:`, error.message);
-                        return null; // エラーが発生したファイルはnullとして扱う
+                        return null;
                     })
             );
         }
 
         // 全てのファイルの読み込みが完了するのを待つ
-        // Promise.allSettled を使うと、どれか一つが失敗しても他は続行する
         const results = await Promise.allSettled(filePromises);
 
         // 成功した結果だけを3次元配列に格納
@@ -88,14 +87,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // ★★★ ここから allCsvData を使って処理を行う ★★★
         console.log('全ての取得したCSVデータ (3次元配列):', allCsvData);
-        // 例: 最初のファイルのデータ
         if (allCsvData.length > 0) {
             console.log('最初のファイル（2025-04-08_com2.csv）のデータ:', allCsvData[0]);
         }
-        // 例: 最初のファイルの2行目3列目のデータ
         if (allCsvData.length > 0 && allCsvData[0].length > 1 && allCsvData[0][1].length > 2) {
             console.log('最初のファイルの2行目3列目のデータ:', allCsvData[0][1][2]);
         }
+
+        // CSV読み込み完了後、入力欄を表示する
+        inputContainer.style.display = 'block'; // または 'flex' など、CSSに合わせて
+        console.log('入力された現在時刻:', currentTimeInput.value);
+        console.log('入力された曜日:', dayOfWeekInput.value);
 
 
     } catch (error) {
@@ -104,5 +106,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             messageElement.textContent = `CSVファイルの読み込み中に予期せぬエラーが発生しました: ${error.message}`;
         }
         console.error('総合的なCSV読み込みエラー:', error);
+
+        // エラーが発生した場合でも入力欄を表示するかは要件によりますが、ここでは表示しない
+        inputContainer.style.display = 'none';
     }
 });
