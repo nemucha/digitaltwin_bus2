@@ -28,7 +28,24 @@
             <label for="currentWeather">現在の天気を手入力してください:</label>
             <input type="text" id="currentWeather" name="currentWeather" placeholder="例: 晴れ">
         </div>
-        <button id="searchButton">検索を実行</button> </div>
+        <button id="searchButton">検索を実行</button>
+    </div>
+
+    <div id="resultOutput" style="display: none;">
+        <hr>
+        <h2>バスの出発時刻と詳細情報</h2>
+        <p><strong>最頻出発時刻:</strong> <span id="mostFrequentBoardTime"></span></p>
+        <p><strong>タイムスタンプ (seg_times):</strong> <span id="segTimes"></span></p>
+        <p><strong>バスの総数 (bus_count):</strong> <span id="busCount"></span></p>
+        <h3>バスの種別:</h3>
+        <ul>
+            <li><strong>バス1種別:</strong> <span id="bus1Kind"></span></li>
+            <li><strong>バス2種別:</strong> <span id="bus2Kind"></span></li>
+            <li><strong>バス3種別:</strong> <span id="bus3Kind"></span></li>
+            <li><strong>バス4種別:</strong> <span id="bus4Kind"></span></li>
+            <li><strong>バス5種別:</strong> <span id="bus5Kind"></span></li>
+        </ul>
+    </div>
 
     <script src="script.js"></script>
 </body>
