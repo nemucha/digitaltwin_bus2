@@ -8,29 +8,38 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
-    <div id="mainContent" class="container"> <h1 class="app-title">バス運行予測ツール</h1> <p id="message" class="status-message">CSVデータを読み込み中...</p>
+    <div id="mainContent" class="container">
+        <h1 class="app-title">バス運行予測ツール</h1>
+        <p id="message" class="status-message">CSVデータを読み込み中...</p>
         
-        <div class="toggle-section"> <input type="checkbox" id="toggleCsvSummary" class="toggle-checkbox">
+        <div class="toggle-section">
+            <input type="checkbox" id="toggleCsvSummary" class="toggle-checkbox">
             <label for="toggleCsvSummary" class="toggle-label">詳細情報を表示 (開発者向け)</label>
         </div>
-        <div id="csvSummaryOutput" class="csv-output-section" style="display: none;"></div>
+        <div id="csvSummaryOutput" class="csv-output-section" style="display: none;">
+            <div id="weatherCodeMapOutput"></div> </div>
         <div id="csvSampleOutput" class="csv-output-section" style="display: none;"></div>
     </div>
 
-    <div id="inputContainer" class="input-section" style="display: none;"> <hr class="divider">
-        <div class="input-group"> <label for="current-time" class="input-label">時刻(14:02-21:48)</label>
+    <div id="inputContainer" class="input-section" style="display: none;">
+        <hr class="divider">
+        <div class="input-group">
+            <label for="current-time" class="input-label">時刻(14:02-21:59)</label>
             <input type="time" id="current-time" name="current-time" class="input-field">
         </div>
-        <div class="input-group"> <label for="dayOfWeek" class="input-label">曜日(平日)を入力してください</label>
+        <div class="input-group">
+            <label for="dayOfWeek" class="input-label">曜日(平日)を入力してください</label>
             <input type="text" id="dayOfWeek" name="dayOfWeek" placeholder="例: 月曜日" class="input-field">
         </div>
-        <div class="input-group"> <label for="currentWeather" class="input-label">天気を入力してください</label>
+        <div class="input-group">
+            <label for="currentWeather" class="input-label">天気を入力してください</label>
             <input type="text" id="currentWeather" name="currentWeather" placeholder="例: 晴れ" class="input-field">
         </div>
         <button id="searchButton" class="action-button">検索を実行</button>
     </div>
 
-    <div id="resultOutput" class="result-section" style="display: none;"> <hr class="divider">
+    <div id="resultOutput" class="result-section" style="display: none;">
+        <hr class="divider">
         <h2 class="section-title">バスの出発時刻と詳細情報</h2>
         <div class="info-group">
             <p><strong>出発時刻(予測)</strong> <span id="mostFrequentBoardTime" class="highlight-info"></span></p>
