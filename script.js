@@ -1,80 +1,108 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const messageElement = document.getElementById('message');
-    const csvSummaryOutput = document.getElementById('csvSummaryOutput'); // 新しい要素
-    const csvSampleOutput = document.getElementById('csvSampleOutput');   // 新しい要素
-    const csvFilePath = 'data/2025-04-08_com2.csv'; // GitHub Pagesでの相対パス
+    const csvSummaryOutput = document.getElementById('csvSummaryOutput');
+    const csvSampleOutput = document.getElementById('csvSampleOutput');
 
-    let csvDataArray = []; // CSVデータを格納する二次元配列
-
-    // 要素が存在しない場合はエラーを出して処理を中断
+    // HTML要素の存在チェック
     if (!messageElement || !csvSummaryOutput || !csvSampleOutput) {
-        console.error('HTML要素が見つかりません。id="message", id="csvSummaryOutput", または id="csvSampleOutput" がHTMLに存在するか確認してください。');
+        console.error('HTML要素が見つかりません。必要なIDを持つ要素がHTMLに存在するか確認してください。');
         return;
     }
 
+    let allCsvData = []; // 全てのCSVデータを格納する3次元配列
+
     try {
-        messageElement.textContent = `CSVファイルを読み込み中: ${csvFilePath}...`;
+        messageElement.textContent = `複数のCSVファイルを読み込み中...`;
 
-        const response = await fetch(csvFilePath);
+        const startDate = new Date('2025-04-08');
+        const endDate = new Date('2025-05-19');
+        const filePromises = []; // 各ファイルの読み込みPromiseを格納
 
-        if (!response.ok) {
-            throw new Error(`HTTPエラー！ステータス: ${response.status}`);
+        // 日付範囲をループしてファイルパスを生成し、Promiseを配列に追加
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため+1
+            const day = String(d.getDate()).padStart(2, '0');
+            const fileName = `${year}-${month}-${day}_com2.csv`;
+            const filePath = `data/${fileName}`;
+
+            // fetch処理をPromiseとして保存
+            filePromises.push(
+                fetch(filePath)
+                    .then(response => {
+                        if (!response.ok) {
+                            // ファイルが見つからない場合もエラーとして扱わない（スキップする）か、エラーを投げるか選択
+                            // 今回はエラーを投げてcatchブロックで処理する
+                            throw new Error(`ファイルが見つからないか、読み込めません: ${filePath} (HTTPステータス: ${response.status})`);
+                        }
+                        return response.text();
+                    })
+                    .then(csvText => {
+                        // CSVテキストを二次元配列に変換
+                        return csvText.trim().split('\n').map(row => row.split(','));
+                    })
+                    .catch(error => {
+                        // 特定のファイルのエラーを捕捉し、console.errorに出力するが、全体の処理は続行
+                        console.error(`Error loading ${filePath}:`, error.message);
+                        return null; // エラーが発生したファイルはnullとして扱う
+                    })
+            );
         }
 
-        const csvText = await response.text();
+        // 全てのファイルの読み込みが完了するのを待つ
+        // Promise.allSettled を使うと、どれか一つが失敗しても他は続行する
+        const results = await Promise.allSettled(filePromises);
 
-        // CSVテキストを解析して二次元配列に変換
-        csvDataArray = csvText.trim().split('\n').map(row => {
-            return row.split(',');
+        // 成功した結果だけを3次元配列に格納
+        results.forEach(result => {
+            if (result.status === 'fulfilled' && result.value !== null) {
+                allCsvData.push(result.value);
+            }
         });
 
-        messageElement.textContent = `CSVデータの読み込みが完了しました。`;
+        // データの表示とコンソール出力
+        messageElement.textContent = `全てのCSVデータの読み込みが完了しました。読み込んだファイル数: ${allCsvData.length}`;
 
-        // ★★★ ここから表示の変更 ★★★
-
-        // 1. データ総数の表示
         csvSummaryOutput.innerHTML = `
             <h2>CSVデータ概要</h2>
-            <p><strong>総行数:</strong> ${csvDataArray.length}行</p>
-            <p><strong>総列数 (最初の行に基づく):</strong> ${csvDataArray.length > 0 ? csvDataArray[0].length : 0}列</p>
+            <p><strong>読み込んだファイル数:</strong> ${allCsvData.length}個</p>
+            <p><strong>最初のファイルの総行数:</strong> ${allCsvData.length > 0 ? allCsvData[0].length : 0}行</p>
+            <p><strong>最初のファイルの総列数 (最初の行に基づく):</strong> ${allCsvData.length > 0 && allCsvData[0].length > 0 ? allCsvData[0][0].length : 0}列</p>
         `;
 
-        // 2. サンプルデータの表示 (最初の5行を例として表示)
-        const sampleRows = 5;
-        let sampleOutputText = '<h3>サンプルデータ (最初の' + sampleRows + '行):</h3>';
+        // サンプルデータの表示 (最初のファイルの最初の数行を例として表示)
+        const sampleRowsToShow = 5;
+        let sampleOutputHtml = '<h3>最初のファイルのサンプルデータ (最初の' + sampleRowsToShow + '行):</h3>';
 
-        if (csvDataArray.length === 0) {
-            sampleOutputText += '<p>データがありません。</p>';
-        } else {
-            // ヘッダー行を含めて最初の sampleRows + 1 行を取得（もしあれば）
-            const rowsToShow = csvDataArray.slice(0, sampleRows);
-            sampleOutputText += '<pre>'; // 整形されたテキストを表示するために<pre>タグを使用
-            rowsToShow.forEach(row => {
-                sampleOutputText += row.join(', ') + '\n'; // カンマ区切りで表示
+        if (allCsvData.length > 0 && allCsvData[0].length > 0) {
+            const firstFileSample = allCsvData[0].slice(0, sampleRowsToShow);
+            sampleOutputHtml += '<pre>';
+            firstFileSample.forEach(row => {
+                sampleOutputHtml += row.join(', ') + '\n';
             });
-            sampleOutputText += '</pre>';
+            sampleOutputHtml += '</pre>';
+        } else {
+            sampleOutputHtml += '<p>読み込んだデータがありません、または最初のファイルが空です。</p>';
         }
-        csvSampleOutput.innerHTML = sampleOutputText;
+        csvSampleOutput.innerHTML = sampleOutputHtml;
 
+        // ★★★ ここから allCsvData を使って処理を行う ★★★
+        console.log('全ての取得したCSVデータ (3次元配列):', allCsvData);
+        // 例: 最初のファイルのデータ
+        if (allCsvData.length > 0) {
+            console.log('最初のファイル（2025-04-08_com2.csv）のデータ:', allCsvData[0]);
+        }
+        // 例: 最初のファイルの2行目3列目のデータ
+        if (allCsvData.length > 0 && allCsvData[0].length > 1 && allCsvData[0][1].length > 2) {
+            console.log('最初のファイルの2行目3列目のデータ:', allCsvData[0][1][2]);
+        }
 
-        // ★★★ 取得したcsvDataArrayを使って、さらにデータを処理・分析できます ★★★
-        // 例えば、特定の列のデータを取得したり、計算を行ったりなど
-        console.log('取得したCSVデータ (二次元配列):', csvDataArray);
-        // 例: 最初の行（ヘッダー）を表示
-        if (csvDataArray.length > 0) {
-            console.log('ヘッダー行:', csvDataArray[0]);
-        }
-        // 例: 特定の列のデータをコンソールに表示
-        if (csvDataArray.length > 1 && csvDataArray[0].length > 0) {
-            // 最初のデータ列 (インデックス0) を取得 (ヘッダーを除く)
-            const firstColumnData = csvDataArray.slice(1).map(row => row[0]);
-            console.log('最初の列のデータ (ヘッダーを除く):', firstColumnData);
-        }
 
     } catch (error) {
+        // 全体的なエラーハンドリング
         if (messageElement) {
-            messageElement.textContent = `CSVファイルの読み込み中にエラーが発生しました: ${error.message}`;
+            messageElement.textContent = `CSVファイルの読み込み中に予期せぬエラーが発生しました: ${error.message}`;
         }
-        console.error('CSV読み込みエラー:', error);
+        console.error('総合的なCSV読み込みエラー:', error);
     }
 });
