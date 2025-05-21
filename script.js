@@ -12,9 +12,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resultOutputDiv = document.getElementById('resultOutput');
     const mostFrequentBoardTimeSpan = document.getElementById('mostFrequentBoardTime');
     const segTimesSpan = document.getElementById('segTimes');
+    const waitingTimeSpan = document.getElementById('waitingTime'); // ここを追加
+    const segValsSpan = document.getElementById('segVals'); // ここを追加
     const busCountSpan = document.getElementById('busCount');
     const bus1KindSpan = document.getElementById('bus1Kind');
-    const bus2KindSpan = document.getElementById('bus2Kind'); // 修正済み
+    const bus2KindSpan = document.getElementById('bus2Kind');
     const bus3KindSpan = document.getElementById('bus3Kind');
     const bus4KindSpan = document.getElementById('bus4Kind');
     const bus5KindSpan = document.getElementById('bus5Kind');
@@ -23,7 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // HTML要素の存在チェック
     if (!messageElement || !csvSummaryOutput || !csvSampleOutput || !inputContainer ||
         !currentTimeInput || !dayOfWeekInput || !currentWeatherInput || !searchButton ||
-        !resultOutputDiv || !mostFrequentBoardTimeSpan || !segTimesSpan || !busCountSpan ||
+        !resultOutputDiv || !mostFrequentBoardTimeSpan || !segTimesSpan || !waitingTimeSpan || // ここを変更
+        !segValsSpan || !busCountSpan || // ここを変更
         !bus1KindSpan || !bus2KindSpan || !bus3KindSpan || !bus4KindSpan || !bus5KindSpan) {
         console.error('HTML要素が見つかりません。必要なIDを持つ要素がHTMLに存在するか確認してください。');
         return;
@@ -35,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // CSVファイルの列インデックスを定義
     // ★★★ 実際のCSVファイルの構造に合わせてこれらのインデックスを調整してください ★★★
     const SEG_TIMES_COLUMN_INDEX = 0;
+    const SEG_VALS_COLUMN_INDEX = 1; // ここを追加: 待ち行列の長さの列
     const DAY_OF_WEEK_COLUMN_INDEX = 2;
     const WEATHER_COLUMN_INDEX = 3;
     const HOUR_COLUMN_INDEX = 5;
@@ -155,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const matchedRows = searchData(time, day, weather, indexedBusData);
 
             if (matchedRows.length > 0) {
-                displayBusInfo(matchedRows);
+                displayBusInfo(matchedRows, time); // ここを修正: 時刻を渡すように変更
             } else {
                 resultOutputDiv.style.display = 'none';
                 alert('指定された条件に合致するデータは見つかりませんでした。');
@@ -238,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return matchedRows;
     }
 
-    function displayBusInfo(matchedRows) {
+    function displayBusInfo(matchedRows, inputCurrentTime) { // ここを修正: inputCurrentTime を引数に追加
         console.log('--- displayBusInfo関数実行 ---');
 
         if (matchedRows.length === 0) {
@@ -250,6 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const timeFrequencies = {};
         const overallMaxIndex = Math.max(
             SEG_TIMES_COLUMN_INDEX,
+            SEG_VALS_COLUMN_INDEX, // ここを追加
             BOARD_HOUR_COLUMN_INDEX,
             BOARD_MINUTE_COLUMN_INDEX,
             BUS_COUNT_COLUMN_INDEX,
@@ -311,8 +316,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (representativeRow) {
+            // 待ち時間の計算
+            let waitingMinutes = 'N/A';
+            if (inputCurrentTime && mostFrequentTime) {
+                const [currentHour, currentMinute] = inputCurrentTime.split(':').map(Number);
+                const [boardHour, boardMinute] = mostFrequentTime.split(':').map(Number);
+
+                const currentTimeInMinutes = currentHour * 60 + currentMinute;
+                let boardTimeInMinutes = boardHour * 60 + boardMinute;
+
+                // もし出発時刻が現在時刻より前なら、翌日の出発とみなす（24時間表記の場合）
+                if (boardTimeInMinutes < currentTimeInMinutes) {
+                    boardTimeInMinutes += 24 * 60; // 翌日の同じ時刻として計算
+                }
+                waitingMinutes = boardTimeInMinutes - currentTimeInMinutes;
+                if (waitingMinutes < 0) { // 念のため負の値の場合の調整
+                    waitingMinutes = 0;
+                }
+                waitingTimeSpan.textContent = `${waitingMinutes}分`;
+            } else {
+                waitingTimeSpan.textContent = waitingMinutes;
+            }
+
             mostFrequentBoardTimeSpan.textContent = mostFrequentTime;
             segTimesSpan.textContent = representativeRow[SEG_TIMES_COLUMN_INDEX]?.trim() || 'N/A';
+            segValsSpan.textContent = representativeRow[SEG_VALS_COLUMN_INDEX]?.trim() || 'N/A'; // ここを追加
             busCountSpan.textContent = representativeRow[BUS_COUNT_COLUMN_INDEX]?.trim() || 'N/A';
             bus1KindSpan.textContent = representativeRow[BUS1_KIND_COLUMN_INDEX]?.trim() || 'N/A';
             bus2KindSpan.textContent = representativeRow[BUS2_KIND_COLUMN_INDEX]?.trim() || 'N/A';
