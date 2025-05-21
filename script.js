@@ -56,6 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return response.text();
                     })
                     .then(csvText => {
+                        // デバッグ用ログ: 読み込んだCSVテキストの最初の数行をログに出力
+                        console.log(`--- Loaded CSV: ${fileName} ---`);
+                        csvText.split('\n').slice(0, 5).forEach(line => console.log(line));
+                        console.log(`--- End of ${fileName} sample ---`);
                         return csvText.trim().split('\n').map(row => row.split(','));
                     })
                     .catch(error => {
@@ -69,9 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         results.forEach(result => {
             if (result.status === 'fulfilled' && result.value !== null) {
-                if (result.value.length > 0) {
-                    allCsvData.push(result.value);
-                }
+                // 各CSVファイルが最低でもヘッダー行を含み、データがあることを確認
+                // ★もしヘッダー行をスキップするなら、ここで .slice(1) を追加してください
+                // allCsvData.push(result.value.slice(1));
+                allCsvData.push(result.value); // 現在はヘッダーをスキップしない設定
             }
         });
 
@@ -114,14 +119,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             const day = dayOfWeekInput.value;
             const weather = currentWeatherInput.value;
 
+            // 検索前にログをクリアして、新しい検索のログを見やすくする
+            console.clear();
+            console.log('--- 新しい検索開始 ---');
+            console.log(`入力された時刻: "${time}", 曜日: "${day}", 天気: "${weather}"`);
+
             const matchedRows = searchData(time, day, weather, allCsvData);
 
             if (matchedRows.length > 0) {
-                // 最頻値を計算し、結果を表示する関数を呼び出す
                 displayBusInfo(matchedRows);
             } else {
-                resultOutputDiv.style.display = 'none'; // 結果がない場合は表示しない
+                resultOutputDiv.style.display = 'none';
                 alert('指定された条件に合致するデータは見つかりませんでした。');
+                console.warn('検索条件に合致するデータが見つかりませんでした。');
             }
         });
 
@@ -146,58 +156,85 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @returns {Array<Array<string>>} 条件に合致する1次元配列（行データ）の2次元配列
      */
     function searchData(inputTime, inputDay, inputWeather, allCsvData) {
-        console.log('--- 検索が実行されました ---');
-        console.log('検索条件:');
-        console.log('時刻:', inputTime);
-        console.log('曜日:', inputDay);
-        console.log('天気:', inputWeather);
+        console.log('--- searchData関数実行 ---');
+        console.log(`検索条件: 時刻:"${inputTime}", 曜日:"${inputDay}", 天気:"${inputWeather}"`);
 
         if (!inputTime || !inputDay || !inputWeather) {
-            alert('時刻、曜日、天気のすべてのフィールドを入力してください。');
-            console.warn('検索条件が不足しています。');
+            console.warn('検索条件が不足しています (searchData内部)。');
             return [];
         }
 
         const [inputHourStr, inputMinuteStr] = inputTime.split(':');
         if (!inputHourStr || !inputMinuteStr) {
             alert('時刻の形式が正しくありません (例: 14:30)。');
-            console.error('時刻のパースに失敗しました。');
+            console.error('時刻のパースに失敗しました (searchData内部)。');
             return [];
         }
         const inputHour = parseInt(inputHourStr, 10);
         const inputMinute = parseInt(inputMinuteStr, 10);
+        console.log(`パースされた入力時刻: 時=${inputHour}, 分=${inputMinute}`);
 
-        // CSVファイルの列インデックスを定義（ご指定の値に修正済み）
-        const HOUR_COLUMN_INDEX = 4;
-        const MINUTE_COLUMN_INDEX = 5;
+
+        // CSVファイルの列インデックスを定義（ご指定の値に修正しました！）
+        const HOUR_COLUMN_INDEX = 5;
+        const MINUTE_COLUMN_INDEX = 6;
         const DAY_OF_WEEK_COLUMN_INDEX = 2;
         const WEATHER_COLUMN_INDEX = 3;
 
+        console.log('検索条件比較に使用される列インデックス:', {
+            HOUR_COLUMN_INDEX,
+            MINUTE_COLUMN_INDEX,
+            DAY_OF_WEEK_COLUMN_INDEX,
+            WEATHER_COLUMN_INDEX
+        });
+
         const matchedRows = [];
 
-        allCsvData.forEach(csvFile => {
-            csvFile.forEach(row => {
-                // 必要な列が全て存在するか確認
-                if (row.length > Math.max(HOUR_COLUMN_INDEX, MINUTE_COLUMN_INDEX, DAY_OF_WEEK_COLUMN_INDEX, WEATHER_COLUMN_INDEX)) {
-                    const csvHourStr = row[HOUR_COLUMN_INDEX];
-                    const csvMinuteStr = row[MINUTE_COLUMN_INDEX];
-                    const csvDay = row[DAY_OF_WEEK_COLUMN_INDEX];
-                    const csvWeather = row[WEATHER_COLUMN_INDEX];
+        if (allCsvData.length === 0) {
+            console.warn('CSVデータが読み込まれていません。');
+            return [];
+        }
 
-                    const csvHour = parseInt(csvHourStr, 10);
-                    const csvMinute = parseInt(csvMinuteStr, 10);
+        allCsvData.forEach((csvFile, fileIndex) => {
+            // ヘッダー行をスキップする場合はここで `csvFile.slice(1)` を使用
+            csvFile.forEach((row, rowIndex) => {
+                // ★ヘッダー行をスキップする場合の例:
+                // if (rowIndex === 0) return;
 
-                    if (csvHour === inputHour &&
-                        csvMinute === inputMinute &&
-                        csvDay.toLowerCase() === inputDay.toLowerCase() &&
-                        csvWeather.toLowerCase() === inputWeather.toLowerCase()) {
-                        matchedRows.push(row);
-                    }
+                // 行が全ての必要な列を持っているかチェック (安全のため)
+                const requiredMaxIndex = Math.max(HOUR_COLUMN_INDEX, MINUTE_COLUMN_INDEX, DAY_OF_WEEK_COLUMN_INDEX, WEATHER_COLUMN_INDEX);
+                if (row.length <= requiredMaxIndex) {
+                    // console.warn(`ファイル ${fileIndex}, 行 ${rowIndex} は必要な列数(${requiredMaxIndex + 1})を満たしていません。スキップします。`, row);
+                    return; // 必要な列がない行はスキップ
+                }
+
+                // CSVデータから値を取得し、前後の空白を除去
+                const csvHourStr = row[HOUR_COLUMN_INDEX].trim();
+                const csvMinuteStr = row[MINUTE_COLUMN_INDEX].trim();
+                const csvDay = row[DAY_OF_WEEK_COLUMN_INDEX].trim();
+                const csvWeather = row[WEATHER_COLUMN_INDEX].trim();
+
+                console.log(`  ファイル ${fileIndex}, 行 ${rowIndex}: CSV Data - Hour:"${csvHourStr}", Min:"${csvMinuteStr}", Day:"${csvDay}", Weather:"${csvWeather}"`);
+
+                const csvHour = parseInt(csvHourStr, 10);
+                const csvMinute = parseInt(csvMinuteStr, 10);
+
+                // 比較のログと実行
+                const matchHour = (csvHour === inputHour);
+                const matchMinute = (csvMinute === inputMinute);
+                const matchDay = (csvDay.toLowerCase() === inputDay.trim().toLowerCase()); // 入力値もトリム
+                const matchWeather = (csvWeather.toLowerCase() === inputWeather.trim().toLowerCase()); // 入力値もトリム
+
+                console.log(`    Comparison: Hour=${matchHour} (${csvHour} vs ${inputHour}), Minute=${matchMinute} (${csvMinute} vs ${inputMinute}), Day=${matchDay} ("${csvDay.toLowerCase()}" vs "${inputDay.trim().toLowerCase()}"), Weather=${matchWeather} ("${csvWeather.toLowerCase()}" vs "${inputWeather.trim().toLowerCase()}")`);
+
+                if (matchHour && matchMinute && matchDay && matchWeather) {
+                    console.log(`    !!! Match found for File ${fileIndex}, Row ${rowIndex} !!!`, row);
+                    matchedRows.push(row); // 条件に合致した行を2次元配列に追加
                 }
             });
         });
 
-        console.log('検索結果 (合致した行の2次元配列):', matchedRows);
+        console.log('searchData 完了: 合致した行の数:', matchedRows.length, matchedRows);
         return matchedRows;
     }
 
@@ -208,37 +245,65 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @param {Array<Array<string>>} matchedRows - 検索条件に合致した行の2次元配列
      */
     function displayBusInfo(matchedRows) {
+        console.log('--- displayBusInfo関数実行 ---');
+        console.log('入力された matchedRows:', matchedRows);
+
         if (matchedRows.length === 0) {
             resultOutputDiv.style.display = 'none';
+            console.warn('displayBusInfo: matchedRows が空です。表示する情報がありません。');
             return;
         }
 
-        // CSVファイルの列インデックスを定義（追加分を含め、ご指定の値に修正済み）
-        const HOUR_COLUMN_INDEX = 4;
-        const MINUTE_COLUMN_INDEX = 5;
-        // const DAY_OF_WEEK_COLUMN_INDEX = 2; // 今回は使用しないが参考として残す
-        // const WEATHER_COLUMN_INDEX = 3;    // 今回は使用しないが参考として残す
-        const BOARD_HOUR_COLUMN_INDEX = 6;
-        const BOARD_MINUTE_COLUMN_INDEX = 7;
-        const SEG_TIMES_COLUMN_INDEX = 8;
-        const BUS_COUNT_COLUMN_INDEX = 9;
-        const BUS1_KIND_COLUMN_INDEX = 10;
-        const BUS2_KIND_COLUMN_INDEX = 11;
-        const BUS3_KIND_COLUMN_INDEX = 12;
-        const BUS4_KIND_COLUMN_INDEX = 13;
-        const BUS5_KIND_COLUMN_INDEX = 14;
+        // CSVファイルの列インデックスを定義（最新の値に修正済み！）
+        const SEG_TIMES_COLUMN_INDEX = 0;
+        const DAY_OF_WEEK_COLUMN_INDEX = 2; // (参考)
+        const WEATHER_COLUMN_INDEX = 3;     // (参考)
+        const HOUR_COLUMN_INDEX = 5;        // (参考)
+        const MINUTE_COLUMN_INDEX = 6;      // (参考)
+        const BOARD_HOUR_COLUMN_INDEX = 12;
+        const BOARD_MINUTE_COLUMN_INDEX = 13;
+        const BUS_COUNT_COLUMN_INDEX = 14;
+        const BUS1_KIND_COLUMN_INDEX = 15;
+        const BUS2_KIND_COLUMN_INDEX = 16;
+        const BUS3_KIND_COLUMN_INDEX = 17;
+        const BUS4_KIND_COLUMN_INDEX = 18;
+        const BUS5_KIND_COLUMN_INDEX = 19;
+
+        console.log('displayBusInfoで使用される列インデックス:', {
+            SEG_TIMES_COLUMN_INDEX,
+            BOARD_HOUR_COLUMN_INDEX,
+            BOARD_MINUTE_COLUMN_INDEX,
+            BUS_COUNT_COLUMN_INDEX,
+            BUS1_KIND_COLUMN_INDEX,
+            BUS2_KIND_COLUMN_INDEX,
+            BUS3_KIND_COLUMN_INDEX,
+            BUS4_KIND_COLUMN_INDEX,
+            BUS5_KIND_COLUMN_INDEX
+        });
 
         // board_hourとboard_minuteを組み合わせた時刻の出現頻度をカウント
         const timeFrequencies = {}; // 例: {"10:30": 5, "10:35": 3}
-        matchedRows.forEach(row => {
-            if (row.length > Math.max(BOARD_HOUR_COLUMN_INDEX, BOARD_MINUTE_COLUMN_INDEX)) {
-                const boardHour = row[BOARD_HOUR_COLUMN_INDEX];
-                const boardMinute = row[BOARD_MINUTE_COLUMN_INDEX];
-                const combinedTime = `${boardHour.padStart(2, '0')}:${boardMinute.padStart(2, '0')}`; // "HH:MM"形式に整形
+        let maxBoardIndex = Math.max(BOARD_HOUR_COLUMN_INDEX, BOARD_MINUTE_COLUMN_INDEX);
+        let maxSegTimesIndex = Math.max(SEG_TIMES_COLUMN_INDEX, BUS_COUNT_COLUMN_INDEX, BUS1_KIND_COLUMN_INDEX, BUS2_KIND_COLUMN_INDEX, BUS3_KIND_COLUMN_INDEX, BUS4_KIND_COLUMN_INDEX, BUS5_KIND_COLUMN_INDEX);
+        const overallMaxIndex = Math.max(maxBoardIndex, maxSegTimesIndex);
 
-                timeFrequencies[combinedTime] = (timeFrequencies[combinedTime] || 0) + 1;
+
+        matchedRows.forEach((row, rowIndex) => {
+            // 必要な列が全て存在するかチェック (安全のため、より高いインデックスまで確認)
+            if (row.length <= overallMaxIndex) {
+                console.warn(`displayBusInfo: 行 ${rowIndex} は必要な列数(${overallMaxIndex + 1})を満たしていません。スキップします。`, row);
+                return;
             }
+
+            const boardHour = row[BOARD_HOUR_COLUMN_INDEX].trim(); // 前後の空白を除去
+            const boardMinute = row[BOARD_MINUTE_COLUMN_INDEX].trim(); // 前後の空白を除去
+            const combinedTime = `${boardHour.padStart(2, '0')}:${boardMinute.padStart(2, '0')}`; // "HH:MM"形式に整形
+
+            timeFrequencies[combinedTime] = (timeFrequencies[combinedTime] || 0) + 1;
+            console.log(`  行 ${rowIndex} から抽出した出発時刻: "${combinedTime}"`);
         });
+
+        console.log('時刻の出現頻度:', timeFrequencies);
 
         let mostFrequentTime = null;
         let maxFrequency = 0;
@@ -250,38 +315,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mostFrequentTime = time;
             }
         }
+        console.log(`最頻出発時刻: "${mostFrequentTime}" (頻度: ${maxFrequency})`);
+
 
         // 最頻値の時刻を持つ行を1つ取り出す
         let representativeRow = null;
         if (mostFrequentTime) {
-            representativeRow = matchedRows.find(row => {
+            const representativeRowIndex = matchedRows.findIndex(row => {
                 if (row.length > Math.max(BOARD_HOUR_COLUMN_INDEX, BOARD_MINUTE_COLUMN_INDEX)) {
-                    const boardHour = row[BOARD_HOUR_COLUMN_INDEX];
-                    const boardMinute = row[BOARD_MINUTE_COLUMN_INDEX];
+                    const boardHour = row[BOARD_HOUR_COLUMN_INDEX].trim();
+                    const boardMinute = row[BOARD_MINUTE_COLUMN_INDEX].trim();
                     const combinedTime = `${boardHour.padStart(2, '0')}:${boardMinute.padStart(2, '0')}`;
                     return combinedTime === mostFrequentTime;
                 }
                 return false;
             });
+
+            if (representativeRowIndex !== -1) {
+                representativeRow = matchedRows[representativeRowIndex];
+                console.log(`最頻出発時刻 "${mostFrequentTime}" を持つ代表行 (matchedRows内インデックス ${representativeRowIndex}):`, representativeRow);
+            } else {
+                console.warn('最頻出発時刻を持つ行が見つかりませんでした。');
+            }
         }
 
         if (representativeRow) {
             // 画面に情報を表示
             mostFrequentBoardTimeSpan.textContent = mostFrequentTime;
-            segTimesSpan.textContent = representativeRow[SEG_TIMES_COLUMN_INDEX] || 'N/A';
-            busCountSpan.textContent = representativeRow[BUS_COUNT_COLUMN_INDEX] || 'N/A';
-            bus1KindSpan.textContent = representativeRow[BUS1_KIND_COLUMN_INDEX] || 'N/A';
-            bus2KindSpan.textContent = representativeRow[BUS2_KIND_COLUMN_INDEX] || 'N/A';
-            bus3KindSpan.textContent = representativeRow[BUS3_KIND_COLUMN_INDEX] || 'N/A';
-            bus4KindSpan.textContent = representativeRow[BUS4_KIND_COLUMN_INDEX] || 'N/A';
-            bus5KindSpan.textContent = representativeRow[BUS5_KIND_COLUMN_INDEX] || 'N/A';
+            // データが存在しない、または取得できない場合のために 'N/A' を設定
+            segTimesSpan.textContent = representativeRow[SEG_TIMES_COLUMN_INDEX]?.trim() || 'N/A';
+            busCountSpan.textContent = representativeRow[BUS_COUNT_COLUMN_INDEX]?.trim() || 'N/A';
+            bus1KindSpan.textContent = representativeRow[BUS1_KIND_COLUMN_INDEX]?.trim() || 'N/A';
+            bus2KindSpan.textContent = representativeRow[BUS2_KIND_COLUMN_INDEX]?.trim() || 'N/A';
+            bus3KindSpan.textContent = representativeRow[BUS3_KIND_COLUMN_INDEX]?.trim() || 'N/A';
+            bus4KindSpan.textContent = representativeRow[BUS4_KIND_COLUMN_INDEX]?.trim() || 'N/A';
+            bus5KindSpan.textContent = representativeRow[BUS5_KIND_COLUMN_INDEX]?.trim() || 'N/A';
 
             resultOutputDiv.style.display = 'block'; // 結果表示エリアを表示
-            console.log('最頻出発時刻の代表行:', representativeRow);
+            console.log('バス情報が画面に表示されました。');
         } else {
             resultOutputDiv.style.display = 'none';
+            // このアラートは displayBusInfo が呼ばれたが有効な代表行が見つからなかった場合にのみ表示
             alert('最頻出発時刻を持つデータが見つかりませんでした。');
-            console.error('最頻出発時刻の代表行が見つかりません。');
+            console.error('最頻出発時刻の代表行が見つからないため、情報を表示できませんでした。');
         }
     }
 });
