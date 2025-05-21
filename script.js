@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const messageElement = document.getElementById('message');
+    const toggleCsvSummaryCheckbox = document.getElementById('toggleCsvSummary'); // 追加
     const csvSummaryOutput = document.getElementById('csvSummaryOutput');
     const csvSampleOutput = document.getElementById('csvSampleOutput');
     const inputContainer = document.getElementById('inputContainer');
@@ -11,23 +12,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 結果表示用の要素を取得
     const resultOutputDiv = document.getElementById('resultOutput');
     const mostFrequentBoardTimeSpan = document.getElementById('mostFrequentBoardTime');
-    const segTimesSpan = document.getElementById('segTimes');
-    const waitingTimeSpan = document.getElementById('waitingTime'); // ここを追加
-    const segValsSpan = document.getElementById('segVals'); // ここを追加
-    const busCountSpan = document.getElementById('busCount');
-    const bus1KindSpan = document.getElementById('bus1Kind');
-    const bus2KindSpan = document.getElementById('bus2Kind');
-    const bus3KindSpan = document.getElementById('bus3Kind');
-    const bus4KindSpan = document.getElementById('bus4Kind');
-    const bus5KindSpan = document.getElementById('bus5Kind');
-
+    const waitingTimeSpan = document.getElementById('waitingTime');
+    const segValsSpan = document.getElementById('segVals');
+    const busKindList = document.getElementById('busKindList'); // 追加: バス種別を表示するul要素
 
     // HTML要素の存在チェック
-    if (!messageElement || !csvSummaryOutput || !csvSampleOutput || !inputContainer ||
+    if (!messageElement || !toggleCsvSummaryCheckbox || !csvSummaryOutput || !csvSampleOutput || !inputContainer ||
         !currentTimeInput || !dayOfWeekInput || !currentWeatherInput || !searchButton ||
-        !resultOutputDiv || !mostFrequentBoardTimeSpan || !segTimesSpan || !waitingTimeSpan || // ここを変更
-        !segValsSpan || !busCountSpan || // ここを変更
-        !bus1KindSpan || !bus2KindSpan || !bus3KindSpan || !bus4KindSpan || !bus5KindSpan) {
+        !resultOutputDiv || !mostFrequentBoardTimeSpan || !waitingTimeSpan ||
+        !segValsSpan || !busKindList) { // 修正: segTimesSpan, busCountSpanを削除
         console.error('HTML要素が見つかりません。必要なIDを持つ要素がHTMLに存在するか確認してください。');
         return;
     }
@@ -38,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // CSVファイルの列インデックスを定義
     // ★★★ 実際のCSVファイルの構造に合わせてこれらのインデックスを調整してください ★★★
     const SEG_TIMES_COLUMN_INDEX = 0;
-    const SEG_VALS_COLUMN_INDEX = 1; // ここを追加: 待ち行列の長さの列
+    const SEG_VALS_COLUMN_INDEX = 1; // 待ち行列の長さの列
     const DAY_OF_WEEK_COLUMN_INDEX = 2;
     const WEATHER_COLUMN_INDEX = 3;
     const HOUR_COLUMN_INDEX = 5;
@@ -123,6 +116,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
 
+        // CSVデータ概要の表示/非表示を切り替えるイベントリスナー
+        toggleCsvSummaryCheckbox.addEventListener('change', () => {
+            if (toggleCsvSummaryCheckbox.checked) {
+                csvSummaryOutput.style.display = 'block';
+                csvSampleOutput.style.display = 'block';
+            } else {
+                csvSummaryOutput.style.display = 'none';
+                csvSampleOutput.style.display = 'none';
+            }
+        });
+
         csvSummaryOutput.innerHTML = `
             <h2>CSVデータ概要</h2>
             <p><strong>読み込んだファイル数:</strong> ${allCsvData.length}個</p>
@@ -159,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const matchedRows = searchData(time, day, weather, indexedBusData);
 
             if (matchedRows.length > 0) {
-                displayBusInfo(matchedRows, time); // ここを修正: 時刻を渡すように変更
+                displayBusInfo(matchedRows, time);
             } else {
                 resultOutputDiv.style.display = 'none';
                 alert('指定された条件に合致するデータは見つかりませんでした。');
@@ -194,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const minuteStr = row[MINUTE_COLUMN_INDEX]?.trim();
 
                 if (!day || !weather || !hourStr || !minuteStr || isNaN(parseInt(hourStr, 10)) || isNaN(parseInt(minuteStr, 10))) {
-                    // console.warn('buildIndex: 不正なデータを持つ行をスキップ。', row); // デバッグ時に有効に
+                    // console.warn('buildIndex: 不正なデータを持つ行をスキップ。', row);
                     return;
                 }
 
@@ -238,11 +242,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const matchedRows = indexedBusData[normalizedDay]?.[normalizedWeather]?.[parsedInputTimeKey] || [];
 
-        console.log('searchData 完了: 合致した行の数:', matchedRows.length); // matchedRowsの内容は通常デバッグ時のみ
+        console.log('searchData 完了: 合致した行の数:', matchedRows.length);
         return matchedRows;
     }
 
-    function displayBusInfo(matchedRows, inputCurrentTime) { // ここを修正: inputCurrentTime を引数に追加
+    function displayBusInfo(matchedRows, inputCurrentTime) {
         console.log('--- displayBusInfo関数実行 ---');
 
         if (matchedRows.length === 0) {
@@ -253,8 +257,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const timeFrequencies = {};
         const overallMaxIndex = Math.max(
-            SEG_TIMES_COLUMN_INDEX,
-            SEG_VALS_COLUMN_INDEX, // ここを追加
+            SEG_TIMES_COLUMN_INDEX, // デバッグ用なのであっても害はない
+            SEG_VALS_COLUMN_INDEX,
             BOARD_HOUR_COLUMN_INDEX,
             BOARD_MINUTE_COLUMN_INDEX,
             BUS_COUNT_COLUMN_INDEX,
@@ -292,7 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mostFrequentTime = time;
             }
         }
-        console.log(`最頻出発時刻: "${mostFrequentTime}" (頻度: ${maxFrequency})`);
+        console.log(`予測出発時間: "${mostFrequentTime}" (頻度: ${maxFrequency})`);
 
 
         let representativeRow = null;
@@ -309,9 +313,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (representativeRowIndex !== -1) {
                 representativeRow = matchedRows[representativeRowIndex];
-                console.log(`最頻出発時刻 "${mostFrequentTime}" を持つ代表行 (matchedRows内インデックス ${representativeRowIndex}):`, representativeRow);
+                console.log(`予測出発時間 "${mostFrequentTime}" を持つ代表行 (matchedRows内インデックス ${representativeRowIndex}):`, representativeRow);
             } else {
-                console.warn('最頻出発時刻を持つ行が見つかりませんでした。');
+                console.warn('予測出発時間を持つ行が見つかりませんでした。');
             }
         }
 
@@ -339,21 +343,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             mostFrequentBoardTimeSpan.textContent = mostFrequentTime;
-            segTimesSpan.textContent = representativeRow[SEG_TIMES_COLUMN_INDEX]?.trim() || 'N/A';
-            segValsSpan.textContent = representativeRow[SEG_VALS_COLUMN_INDEX]?.trim() || 'N/A'; // ここを追加
-            busCountSpan.textContent = representativeRow[BUS_COUNT_COLUMN_INDEX]?.trim() || 'N/A';
-            bus1KindSpan.textContent = representativeRow[BUS1_KIND_COLUMN_INDEX]?.trim() || 'N/A';
-            bus2KindSpan.textContent = representativeRow[BUS2_KIND_COLUMN_INDEX]?.trim() || 'N/A';
-            bus3KindSpan.textContent = representativeRow[BUS3_KIND_COLUMN_INDEX]?.trim() || 'N/A';
-            bus4KindSpan.textContent = representativeRow[BUS4_KIND_COLUMN_INDEX]?.trim() || 'N/A';
-            bus5KindSpan.textContent = representativeRow[BUS5_KIND_COLUMN_INDEX]?.trim() || 'N/A';
+            // segTimesSpan.textContent = representativeRow[SEG_TIMES_COLUMN_INDEX]?.trim() || 'N/A'; // 削除
+
+            // 待ち行列の長さ (seg_vals) を表示し、小数点以下第2位で四捨五入して単位mを付ける
+            let segValsValue = parseFloat(representativeRow[SEG_VALS_COLUMN_INDEX]?.trim());
+            if (!isNaN(segValsValue)) {
+                segValsSpan.textContent = `${segValsValue.toFixed(2)}m`; // 小数点以下2桁で四捨五入し単位mを追加
+            } else {
+                segValsSpan.textContent = 'N/A';
+            }
+            
+            // bus_countに基づいてバス種別を動的に表示
+            const busCount = parseInt(representativeRow[BUS_COUNT_COLUMN_INDEX]?.trim(), 10);
+            busKindList.innerHTML = ''; // 一度リストをクリア
+            if (!isNaN(busCount) && busCount > 0) {
+                for (let i = 1; i <= busCount && i <= 5; i++) { // 最大5種別まで
+                    const kindIndex = BUS1_KIND_COLUMN_INDEX + (i - 1);
+                    const busKind = representativeRow[kindIndex]?.trim() || 'N/A';
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<strong>バス${i}種別:</strong> <span>${busKind}</span>`;
+                    busKindList.appendChild(listItem);
+                }
+            } else {
+                const listItem = document.createElement('li');
+                listItem.textContent = 'バス種別の情報がありません。';
+                busKindList.appendChild(listItem);
+            }
 
             resultOutputDiv.style.display = 'block';
             console.log('バス情報が画面に表示されました。');
         } else {
             resultOutputDiv.style.display = 'none';
-            alert('最頻出発時刻のデータが見つからなかったため、情報を表示できませんでした。');
-            console.error('最頻出発時刻の代表行が見つからないため、情報を表示できませんでした。');
+            alert('予測出発時間のデータが見つからなかったため、情報を表示できませんでした。');
+            console.error('予測出発時間の代表行が見つからないため、情報を表示できませんでした。');
         }
     }
 });
