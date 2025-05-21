@@ -151,8 +151,8 @@ function searchData(inputTime, inputDay, inputWeather, allCsvData) {
     const inputMinute = parseInt(inputMinuteStr, 10);
 
     // CSVファイルの列インデックスを定義（ご指定の値に修正しました！）
-    const HOUR_COLUMN_INDEX = 4;
-    const MINUTE_COLUMN_INDEX = 5;
+    const HOUR_COLUMN_INDEX = 5;
+    const MINUTE_COLUMN_INDEX = 6;
     const DAY_OF_WEEK_COLUMN_INDEX = 2;
     const WEATHER_COLUMN_INDEX = 3;
 
