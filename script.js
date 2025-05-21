@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const kindIndex = BUS1_KIND_COLUMN_INDEX + (i - 1);
                     const busKind = representativeRow[kindIndex]?.trim() || 'N/A';
                     const listItem = document.createElement('li');
-                    listItem.innerHTML = `<strong>バス${i}種別:</strong> <span>${busKind}</span>`;
+                    listItem.innerHTML = `<strong>バス${i}</strong> <span>${busKind}</span>`;
                     busKindList.appendChild(listItem);
                 }
             } else {
