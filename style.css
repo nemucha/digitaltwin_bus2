@@ -179,6 +179,11 @@ body {
     margin-bottom: 10px;
 }
 
+.info-group p strong {
+    min-width: 120px; /* 強調テキストの最小幅を確保し、表示を揃える */
+    display: inline-block;
+}
+
 .highlight-info {
     color: #007bff; /* 青系の強調色 */
     font-weight: bold;
@@ -239,6 +244,11 @@ body {
 
     .subsection-title {
         font-size: 1.2em;
+    }
+    
+    .info-group p strong { /* スマホでは揃えなくてもよい場合 */
+        min-width: unset;
+        display: inline;
     }
 }
 
