@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentTimeInput = document.getElementById('current-time');
     const dayOfWeekInput = document.getElementById('dayOfWeek');
     const currentWeatherInput = document.getElementById('currentWeather');
-    const searchButton = document.getElementById('searchButton'); // 検索ボタンを取得
+    const searchButton = document.getElementById('searchButton');
 
     // HTML要素の存在チェック
     if (!messageElement || !csvSummaryOutput || !csvSampleOutput || !inputContainer ||
@@ -54,7 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         results.forEach(result => {
             if (result.status === 'fulfilled' && result.value !== null) {
-                allCsvData.push(result.value);
+                // 各CSVファイルが最低でもヘッダー行を含み、データがあることを確認
+                if (result.value.length > 0) {
+                    allCsvData.push(result.value);
+                }
             }
         });
 
@@ -95,12 +98,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 検索ボタンにイベントリスナーを追加
         searchButton.addEventListener('click', () => {
-            const time = currentTimeInput.value;
+            const time = currentTimeInput.value; // "HH:MM"形式
             const day = dayOfWeekInput.value;
             const weather = currentWeatherInput.value;
 
             // 検索関数を呼び出し、取得した値を渡す
-            searchData(time, day, weather, allCsvData); // allCsvDataも渡す
+            // allCsvDataを渡すことに注意
+            searchData(time, day, weather, allCsvData);
         });
 
 
@@ -114,34 +118,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * ユーザーが入力した時刻、曜日、天気に基づいてデータを検索する関数。
- * この関数内に実際の検索ロジックを実装します。
- * @param {string} time - 入力された現在時刻 (例: "14:30")
- * @param {string} day - 入力された曜日 (例: "月曜日")
- * @param {string} weather - 入力された天気 (例: "晴れ")
- * @param {Array<Array<Array<string>>>} data - 読み込まれた全てのCSVデータ (3次元配列)
+ * ユーザーが入力した時刻、曜日、天気に基づいてCSVデータを検索し、
+ * 条件に合致する行を2次元配列として返す関数。
+ *
+ * @param {string} inputTime - 入力された現在時刻 (例: "14:30")
+ * @param {string} inputDay - 入力された曜日 (例: "月曜日")
+ * @param {string} inputWeather - 入力された天気 (例: "晴れ")
+ * @param {Array<Array<Array<string>>>} allCsvData - 読み込まれた全てのCSVデータ (3次元配列)
+ * @returns {Array<Array<string>>} 条件に合致する1次元配列（行データ）の2次元配列
  */
-function searchData(time, day, weather, data) {
+function searchData(inputTime, inputDay, inputWeather, allCsvData) {
     console.log('--- 検索が実行されました ---');
     console.log('検索条件:');
-    console.log('時刻:', time);
-    console.log('曜日:', day);
-    console.log('天気:', weather);
-    console.log('CSVデータ:', data); // CSVデータも利用可能
+    console.log('時刻:', inputTime);
+    console.log('曜日:', inputDay);
+    console.log('天気:', inputWeather);
 
-    // ★★★ ここに実際の検索ロジックを実装します ★★★
-    // 例: 特定の条件に合うデータをallCsvDataから探し、結果を画面に表示する
-    // 現在はコンソールにログを出力するだけです。
-    // 例: 特定の時刻のデータを探す場合:
-    // const matchedData = [];
-    // data.forEach(fileData => {
-    //     fileData.forEach(row => {
-    //         if (row[0] === time) { // 仮に時刻がCSVの0列目にあると想定
-    //             matchedData.push(row);
-    //         }
-    //     });
-    // });
-    // console.log('一致したデータ:', matchedData);
+    // 入力値のバリデーション（オプション）
+    if (!inputTime || !inputDay || !inputWeather) {
+        alert('時刻、曜日、天気のすべてのフィールドを入力してください。');
+        console.warn('検索条件が不足しています。');
+        return []; // 条件不足の場合は空の配列を返す
+    }
 
-    alert(`検索を実行しました！\n時刻: ${time}\n曜日: ${day}\n天気: ${weather}\n\n検索ロジックはまだ実装されていません。`);
+    // 入力時刻を時と分に分割
+    const [inputHourStr, inputMinuteStr] = inputTime.split(':');
+    if (!inputHourStr || !inputMinuteStr) {
+        alert('時刻の形式が正しくありません (例: 14:30)。');
+        console.error('時刻のパースに失敗しました。');
+        return [];
+    }
+    const inputHour = parseInt(inputHourStr, 10);
+    const inputMinute = parseInt(inputMinuteStr, 10);
+
+    // CSVファイルの列インデックスを定義（CSVの構造に合わせて調整してください！）
+    const HOUR_COLUMN_INDEX = 0;    // 例: CSVの0列目が「時」
+    const MINUTE_COLUMN_INDEX = 1;  // 例: CSVの1列目が「分」
+    const DAY_OF_WEEK_COLUMN_INDEX = 2; // 例: CSVの2列目が「曜日」
+    const WEATHER_COLUMN_INDEX = 3; // 例: CSVの3列目が「天気」
+
+    const matchedRows = []; // 条件に合致した1次元配列（行データ）を格納する2次元配列
+
+    // 3次元配列 (allCsvData) をループして検索
+    allCsvData.forEach(csvFile => { // 各ファイル (2次元配列)
+        // ヘッダー行をスキップする場合、ループを1から始める (例: i = 1)
+        // ここでは、全ての行をチェックする前提で i = 0 から開始
+        csvFile.forEach(row => { // 各行 (1次元配列)
+            // 行が十分な列数を持っているかチェック
+            if (row.length > Math.max(HOUR_COLUMN_INDEX, MINUTE_COLUMN_INDEX, DAY_OF_WEEK_COLUMN_INDEX, WEATHER_COLUMN_INDEX)) {
+                const csvHourStr = row[HOUR_COLUMN_INDEX];
+                const csvMinuteStr = row[MINUTE_COLUMN_INDEX];
+                const csvDay = row[DAY_OF_WEEK_COLUMN_INDEX];
+                const csvWeather = row[WEATHER_COLUMN_INDEX];
+
+                // CSVデータ内の時と分も数値に変換して比較
+                const csvHour = parseInt(csvHourStr, 10);
+                const csvMinute = parseInt(csvMinuteStr, 10);
+
+                // 全ての条件が一致するかどうかをチェック
+                // 文字列比較は大文字・小文字を区別する場合があるので注意（必要ならtoLowerCase()を使う）
+                if (csvHour === inputHour &&
+                    csvMinute === inputMinute &&
+                    csvDay.toLowerCase() === inputDay.toLowerCase() && // 大文字小文字を区別しない比較
+                    csvWeather.toLowerCase() === inputWeather.toLowerCase()) { // 大文字小文字を区別しない比較
+                    matchedRows.push(row); // 条件に合致した行を2次元配列に追加
+                }
+            }
+        });
+    });
+
+    console.log('検索結果 (合致した行の2次元配列):', matchedRows);
+
+    if (matchedRows.length > 0) {
+        alert(`検索が完了しました。\n${matchedRows.length}件のデータが一致しました。\n結果はコンソールを確認してください。`);
+        // 検索結果を画面に表示するロジックをここに追加することもできます
+        // 例: outputDiv.innerHTML = '<h3>検索結果:</h3><pre>' + matchedRows.map(r => r.join(', ')).join('\n') + '</pre>';
+    } else {
+        alert('指定された条件に合致するデータは見つかりませんでした。');
+    }
+
+    return matchedRows; // 検索結果を返す
 }
