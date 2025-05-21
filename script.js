@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const weather = currentWeatherInput.value;
 
             // 検索関数を呼び出し、取得した値を渡す
-            // allCsvDataを渡すことに注意
             searchData(time, day, weather, allCsvData);
         });
 
@@ -151,20 +150,19 @@ function searchData(inputTime, inputDay, inputWeather, allCsvData) {
     const inputHour = parseInt(inputHourStr, 10);
     const inputMinute = parseInt(inputMinuteStr, 10);
 
-    // CSVファイルの列インデックスを定義（CSVの構造に合わせて調整してください！）
-    const HOUR_COLUMN_INDEX = 0;    // 例: CSVの0列目が「時」
-    const MINUTE_COLUMN_INDEX = 1;  // 例: CSVの1列目が「分」
-    const DAY_OF_WEEK_COLUMN_INDEX = 2; // 例: CSVの2列目が「曜日」
-    const WEATHER_COLUMN_INDEX = 3; // 例: CSVの3列目が「天気」
+    // CSVファイルの列インデックスを定義（ご指定の値に修正しました！）
+    const HOUR_COLUMN_INDEX = 4;
+    const MINUTE_COLUMN_INDEX = 5;
+    const DAY_OF_WEEK_COLUMN_INDEX = 2;
+    const WEATHER_COLUMN_INDEX = 3;
 
     const matchedRows = []; // 条件に合致した1次元配列（行データ）を格納する2次元配列
 
     // 3次元配列 (allCsvData) をループして検索
     allCsvData.forEach(csvFile => { // 各ファイル (2次元配列)
-        // ヘッダー行をスキップする場合、ループを1から始める (例: i = 1)
-        // ここでは、全ての行をチェックする前提で i = 0 から開始
+        // ヘッダー行をスキップする場合、ループを1から始める (例: forEach((row, index) => { if (index === 0) return; ... }))
         csvFile.forEach(row => { // 各行 (1次元配列)
-            // 行が十分な列数を持っているかチェック
+            // 行が全ての必要な列を持っているかチェック
             if (row.length > Math.max(HOUR_COLUMN_INDEX, MINUTE_COLUMN_INDEX, DAY_OF_WEEK_COLUMN_INDEX, WEATHER_COLUMN_INDEX)) {
                 const csvHourStr = row[HOUR_COLUMN_INDEX];
                 const csvMinuteStr = row[MINUTE_COLUMN_INDEX];
@@ -176,11 +174,10 @@ function searchData(inputTime, inputDay, inputWeather, allCsvData) {
                 const csvMinute = parseInt(csvMinuteStr, 10);
 
                 // 全ての条件が一致するかどうかをチェック
-                // 文字列比較は大文字・小文字を区別する場合があるので注意（必要ならtoLowerCase()を使う）
                 if (csvHour === inputHour &&
                     csvMinute === inputMinute &&
-                    csvDay.toLowerCase() === inputDay.toLowerCase() && // 大文字小文字を区別しない比較
-                    csvWeather.toLowerCase() === inputWeather.toLowerCase()) { // 大文字小文字を区別しない比較
+                    csvDay.toLowerCase() === inputDay.toLowerCase() &&
+                    csvWeather.toLowerCase() === inputWeather.toLowerCase()) {
                     matchedRows.push(row); // 条件に合致した行を2次元配列に追加
                 }
             }
@@ -192,7 +189,7 @@ function searchData(inputTime, inputDay, inputWeather, allCsvData) {
     if (matchedRows.length > 0) {
         alert(`検索が完了しました。\n${matchedRows.length}件のデータが一致しました。\n結果はコンソールを確認してください。`);
         // 検索結果を画面に表示するロジックをここに追加することもできます
-        // 例: outputDiv.innerHTML = '<h3>検索結果:</h3><pre>' + matchedRows.map(r => r.join(', ')).join('\n') + '</pre>';
+        // 例: document.getElementById('searchResultsOutput').innerHTML = '<h3>検索結果:</h3><pre>' + matchedRows.map(r => r.join(', ')).join('\n') + '</pre>';
     } else {
         alert('指定された条件に合致するデータは見つかりませんでした。');
     }
