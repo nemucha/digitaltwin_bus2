@@ -1,14 +1,78 @@
 body {
     font-family: sans-serif;
+    /* display: flex; を削除または変更して、縦積みになるようにする */
+    /* flex-direction: column; を追加して、子要素を縦に並べる */
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column; /* これが重要です。子要素を縦に並べます */
+    justify-content: flex-start; /* 上から順に配置 */
+    align-items: center; /* 水平方向の中央揃えは維持 */
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
+    padding: 20px; /* 上下の余白を追加して、コンテンツが端に寄りすぎないように */
+    box-sizing: border-box; /* paddingがwidth/heightに含まれるように */
+}
+
+#mainContent {
+    /* CSV表示部分のコンテナ。必要に応じてスタイルを追加 */
+    width: 80%; /* 幅を調整 */
+    max-width: 800px; /* 最大幅を設定 */
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px; /* CSV表示と入力欄の間にスペースを確保 */
+}
+
+#inputContainer {
+    /* 時刻と曜日入力部分のコンテナ */
+    width: 80%; /* 幅を調整 */
+    max-width: 800px; /* 最大幅を設定 */
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    /* display: none; はJavaScriptで制御するため、CSSからは削除しても良いですが、
+       初期表示制御として残しても問題ありません。 */
 }
 
 p {
-    font-size: 2em;
+    font-size: 1.2em; /* フォントサイズを調整 */
     color: #333;
+    text-align: center; /* メッセージを中央寄せ */
+}
+
+h2, h3 {
+    color: #555;
+    text-align: center;
+}
+
+pre {
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto; /* 横長になった場合にスクロールバーを表示 */
+}
+
+label {
+    display: block; /* ラベルをブロック要素にして、入力欄が改行されるように */
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="time"],
+input[type="text"] {
+    width: calc(100% - 20px); /* 親要素の幅からpadding分を引く */
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* paddingを幅に含める */
+}
+
+hr {
+    border: none;
+    border-top: 1px dashed #ccc; /* 点線で区切り線を表現 */
+    margin: 20px 0; /* 上下のマージン */
 }
