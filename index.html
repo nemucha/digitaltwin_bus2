@@ -22,7 +22,7 @@
             <input type="time" id="current-time" name="current-time" class="input-field">
         </div>
         <div class="input-group"> <label for="dayOfWeek" class="input-label">曜日(平日)を入力してください:</label>
-            <input type="text" id="dayOfWeek" name="dayOfWeek" placeholder="例: 日曜日" class="input-field">
+            <input type="text" id="dayOfWeek" name="dayOfWeek" placeholder="例: 月曜日" class="input-field">
         </div>
         <div class="input-group"> <label for="currentWeather" class="input-label">現在の天気を手入力してください:</label>
             <input type="text" id="currentWeather" name="currentWeather" placeholder="例: 晴れ" class="input-field">
@@ -33,12 +33,12 @@
     <div id="resultOutput" class="result-section" style="display: none;"> <hr class="divider">
         <h2 class="section-title">バスの出発時刻と詳細情報</h2>
         <div class="info-group">
-            <p><strong>予測出発時間:</strong> <span id="mostFrequentBoardTime" class="highlight-info"></span></p>
-            <p><strong>待ち時間:</strong> <span id="waitingTime" class="highlight-info"></span></p>
-            <p><strong>待ち行列の長さ (seg_vals):</strong> <span id="segVals" class="highlight-info"></span></p>
+            <p><strong>予測出発時間</strong> <span id="mostFrequentBoardTime" class="highlight-info"></span></p>
+            <p><strong>待ち時間</strong> <span id="waitingTime" class="highlight-info"></span></p>
+            <p><strong>待ち行列の長さ:</strong> <span id="segVals" class="highlight-info"></span></p>
         </div>
         
-        <h3 class="subsection-title">バスの種別:</h3>
+        <h3 class="subsection-title">バス</h3>
         <ul id="busKindList" class="bus-kind-list">
             </ul>
     </div>
