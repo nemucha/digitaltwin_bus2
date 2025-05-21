@@ -10,19 +10,22 @@
 <body>
     <div id="mainContent">
         <p id="message">CSVデータを読み込み中...</p>
-        <div id="csvSummaryOutput"></div>
-        <div id="csvSampleOutput"></div>
+        
+        <div style="margin-bottom: 15px;">
+            <input type="checkbox" id="toggleCsvSummary">
+            <label for="toggleCsvSummary">CSVデータ概要を表示</label>
+        </div>
+        <div id="csvSummaryOutput" style="display: none;"></div>
+        <div id="csvSampleOutput" style="display: none;"></div>
     </div>
 
     <div id="inputContainer" style="display: none;">
         <hr>
         <div>
-            <label for="current-time">現在時刻:</label>
-            <input type="time" id="current-time" name="current-time">
+            <label for="current-time">現在時刻(14:02-21:59):</label> <input type="time" id="current-time" name="current-time">
         </div>
         <div>
-            <label for="dayOfWeek">曜日を手入力してください:</label>
-            <input type="text" id="dayOfWeek" name="dayOfWeek" placeholder="例: 日曜日">
+            <label for="dayOfWeek">曜日(平日)を入力してください:</label> <input type="text" id="dayOfWeek" name="dayOfWeek" placeholder="例: 日曜日">
         </div>
         <div>
             <label for="currentWeather">現在の天気を手入力してください:</label>
@@ -34,17 +37,10 @@
     <div id="resultOutput" style="display: none;">
         <hr>
         <h2>バスの出発時刻と詳細情報</h2>
-        <p><strong>最頻出発時刻:</strong> <span id="mostFrequentBoardTime"></span></p>
-        <p><strong>タイムスタンプ (seg_times):</strong> <span id="segTimes"></span></p>
-        <p><strong>待ち時間:</strong> <span id="waitingTime"></span></p> <p><strong>待ち行列の長さ (seg_vals):</strong> <span id="segVals"></span></p> <p><strong>バスの総数 (bus_count):</strong> <span id="busCount"></span></p>
+        <p><strong>予測出発時間:</strong> <span id="mostFrequentBoardTime"></span></p> <p><strong>待ち時間:</strong> <span id="waitingTime"></span></p>
+        <p><strong>待ち行列の長さ (seg_vals):</strong> <span id="segVals"></span></p>
         <h3>バスの種別:</h3>
-        <ul>
-            <li><strong>バス1種別:</strong> <span id="bus1Kind"></span></li>
-            <li><strong>バス2種別:</strong> <span id="bus2Kind"></span></li>
-            <li><strong>バス3種別:</strong> <span id="bus3Kind"></span></li>
-            <li><strong>バス4種別:</strong> <span id="bus4Kind"></span></li>
-            <li><strong>バス5種別:</strong> <span id="bus5Kind"></span></li>
-        </ul>
+        <ul id="busKindList"> </ul>
     </div>
 
     <script src="script.js"></script>
