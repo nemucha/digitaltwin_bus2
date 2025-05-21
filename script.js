@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const messageElement = document.getElementById('message');
-    const toggleCsvSummaryCheckbox = document.getElementById('toggleCsvSummary'); // 追加
+    const toggleCsvSummaryCheckbox = document.getElementById('toggleCsvSummary');
     const csvSummaryOutput = document.getElementById('csvSummaryOutput');
     const csvSampleOutput = document.getElementById('csvSampleOutput');
+    const weatherCodeMapOutput = document.getElementById('weatherCodeMapOutput'); // 新しく取得
     const inputContainer = document.getElementById('inputContainer');
     const currentTimeInput = document.getElementById('current-time');
     const dayOfWeekInput = document.getElementById('dayOfWeek');
@@ -14,24 +15,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mostFrequentBoardTimeSpan = document.getElementById('mostFrequentBoardTime');
     const waitingTimeSpan = document.getElementById('waitingTime');
     const segValsSpan = document.getElementById('segVals');
-    const busKindList = document.getElementById('busKindList'); // 追加: バス種別を表示するul要素
+    const busKindList = document.getElementById('busKindList');
 
     // HTML要素の存在チェック
-    if (!messageElement || !toggleCsvSummaryCheckbox || !csvSummaryOutput || !csvSampleOutput || !inputContainer ||
-        !currentTimeInput || !dayOfWeekInput || !currentWeatherInput || !searchButton ||
+    if (!messageElement || !toggleCsvSummaryCheckbox || !csvSummaryOutput || !csvSampleOutput || !weatherCodeMapOutput || // 追加
+        !inputContainer || !currentTimeInput || !dayOfWeekInput || !currentWeatherInput || !searchButton ||
         !resultOutputDiv || !mostFrequentBoardTimeSpan || !waitingTimeSpan ||
-        !segValsSpan || !busKindList) { // 修正: segTimesSpan, busCountSpanを削除
+        !segValsSpan || !busKindList) {
         console.error('HTML要素が見つかりません。必要なIDを持つ要素がHTMLに存在するか確認してください。');
         return;
     }
 
-    let allCsvData = []; // 全ての生のCSVデータを格納する3次元配列
+    let allCsvData = [];
     let indexedBusData = {}; 
 
     // CSVファイルの列インデックスを定義
     // ★★★ 実際のCSVファイルの構造に合わせてこれらのインデックスを調整してください ★★★
     const SEG_TIMES_COLUMN_INDEX = 0;
-    const SEG_VALS_COLUMN_INDEX = 1; // 待ち行列の長さの列
+    const SEG_VALS_COLUMN_INDEX = 1;
     const DAY_OF_WEEK_COLUMN_INDEX = 2;
     const WEATHER_COLUMN_INDEX = 3;
     const HOUR_COLUMN_INDEX = 5;
@@ -45,6 +46,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const BUS4_KIND_COLUMN_INDEX = 18;
     const BUS5_KIND_COLUMN_INDEX = 19;
 
+    // WEATHER_CODE_MAP の定義
+    const WEATHER_CODE_MAP = {
+        0: "晴れ", 1: "主に晴れ", 2: "曇りがち", 3: "曇り",
+        45: "霧", 48: "霧（霧氷あり）", 51: "小雨", 53: "中程度の霧雨", 55: "強い霧雨",
+        61: "小雨", 63: "中程度の雨", 65: "強い雨",
+        71: "小雪", 73: "中程度の雪", 75: "強い雪",
+        80: "にわか雨", 81: "激しいにわか雨", 82: "非常に激しいにわか雨",
+    };
+
 
     try {
         inputContainer.style.display = 'none';
@@ -56,12 +66,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const filePromises = [];
         let totalFiles = 0;
 
-        // 総ファイル数を計算
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             totalFiles++;
         }
         
-        let filesLoadedCount = 0; // 読み込みが完了したファイルのカウンター
+        let filesLoadedCount = 0;
 
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const year = d.getFullYear();
@@ -80,13 +89,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     })
                     .then(csvText => {
                         filesLoadedCount++;
-                        // ★★★ ここで進捗をコンソールに表示 ★★★
                         console.log(`ファイル読み込み中: ${fileName} (${filesLoadedCount}/${totalFiles})`);
                         messageElement.textContent = `CSVファイルを読み込み中... (${filesLoadedCount}/${totalFiles})`;
                         return csvText.trim().split('\n').map(row => row.split(','));
                     })
                     .catch(error => {
-                        filesLoadedCount++; // エラーの場合もカウントを進める
+                        filesLoadedCount++;
                         console.error(`Error loading ${filePath}:`, error.message);
                         messageElement.textContent = `CSVファイルを読み込み中... (${filesLoadedCount}/${totalFiles}) - エラーあり`;
                         return null;
@@ -105,18 +113,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageElement.textContent = `全てのCSVデータの読み込みが完了しました。読み込んだファイル数: ${allCsvData.length} / ${totalFiles}`;
         console.log(`全てのCSVデータの読み込みが完了しました。読み込んだファイル数: ${allCsvData.length} / ${totalFiles}`);
 
-        // ★★★ ここでデータをインデックス化する ★★★
         if (allCsvData.length > 0) {
             messageElement.textContent += ' データを検索用に最適化中...';
             console.log('データを検索用に最適化中...');
             indexedBusData = buildIndex(allCsvData);
             messageElement.textContent = `全てのCSVデータの読み込みと最適化が完了しました。読み込んだファイル数: ${allCsvData.length} / ${totalFiles}`;
             console.log('データの最適化が完了しました。');
-            // console.log('検索用に最適化されたデータ (indexedBusData):', indexedBusData); // 必要であれば有効に
         }
 
-
-        // CSVデータ概要の表示/非表示を切り替えるイベントリスナー
+        // CSVデータ概要と天気コードマップの表示/非表示を切り替えるイベントリスナー
         toggleCsvSummaryCheckbox.addEventListener('change', () => {
             if (toggleCsvSummaryCheckbox.checked) {
                 csvSummaryOutput.style.display = 'block';
@@ -127,12 +132,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // CSVデータ概要の表示
         csvSummaryOutput.innerHTML = `
             <h2>CSVデータ概要</h2>
             <p><strong>読み込んだファイル数:</strong> ${allCsvData.length}個</p>
             <p><strong>最初のファイルの総行数:</strong> ${allCsvData.length > 0 ? allCsvData[0].length : 0}行</p>
             <p><strong>最初のファイルの総列数 (最初の行に基づく):</strong> ${allCsvData.length > 0 && allCsvData[0].length > 0 ? allCsvData[0][0].length : 0}列</p>
-        `;
+            <div id="weatherCodeMapOutput"></div> `;
+        // ここでweatherCodeMapOutputを再取得し直す必要がある（innerHTMLで上書きされたため）
+        const updatedWeatherCodeMapOutput = document.getElementById('weatherCodeMapOutput'); 
+
+        // WEATHER_CODE_MAPの内容を生成して表示
+        let weatherMapHtml = '<h3>天気コードマップ:</h3><ul>';
+        for (const code in WEATHER_CODE_MAP) {
+            weatherMapHtml += `<li><strong>${code}:</strong> ${WEATHER_CODE_MAP[code]}</li>`;
+        }
+        weatherMapHtml += '</ul>';
+        if (updatedWeatherCodeMapOutput) { // 要素が取得できたかチェック
+            updatedWeatherCodeMapOutput.innerHTML = weatherMapHtml;
+        } else {
+            console.error('weatherCodeMapOutput 要素が見つかりません。');
+        }
+
 
         const sampleRowsToShow = 5;
         let sampleOutputHtml = '<h3>最初のファイルのサンプルデータ (最初の' + sampleRowsToShow + '行):</h3>';
@@ -157,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const weather = currentWeatherInput.value;
 
             console.clear();
-            console.log('--- 新しい検索開始 ---');
+            console.log(`--- 新しい検索開始 ---`);
             console.log(`入力された時刻: "${time}", 曜日: "${day}", 天気: "${weather}"`);
 
             const matchedRows = searchData(time, day, weather, indexedBusData);
@@ -198,7 +219,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const minuteStr = row[MINUTE_COLUMN_INDEX]?.trim();
 
                 if (!day || !weather || !hourStr || !minuteStr || isNaN(parseInt(hourStr, 10)) || isNaN(parseInt(minuteStr, 10))) {
-                    // console.warn('buildIndex: 不正なデータを持つ行をスキップ。', row);
                     return;
                 }
 
@@ -257,7 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const timeFrequencies = {};
         const overallMaxIndex = Math.max(
-            SEG_TIMES_COLUMN_INDEX, // デバッグ用なのであっても害はない
+            SEG_TIMES_COLUMN_INDEX,
             SEG_VALS_COLUMN_INDEX,
             BOARD_HOUR_COLUMN_INDEX,
             BOARD_MINUTE_COLUMN_INDEX,
@@ -343,7 +363,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             mostFrequentBoardTimeSpan.textContent = mostFrequentTime;
-            // segTimesSpan.textContent = representativeRow[SEG_TIMES_COLUMN_INDEX]?.trim() || 'N/A'; // 削除
 
             // 待ち行列の長さ (seg_vals) を表示し、小数点以下第2位で四捨五入して単位mを付ける
             let segValsValue = parseFloat(representativeRow[SEG_VALS_COLUMN_INDEX]?.trim());
