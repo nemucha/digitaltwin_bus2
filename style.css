@@ -1,78 +1,257 @@
+/* 基本的なリセットとフォント */
 body {
-    font-family: sans-serif;
-    /* display: flex; を削除または変更して、縦積みになるようにする */
-    /* flex-direction: column; を追加して、子要素を縦に並べる */
-    display: flex;
-    flex-direction: column; /* これが重要です。子要素を縦に並べます */
-    justify-content: flex-start; /* 上から順に配置 */
-    align-items: center; /* 水平方向の中央揃えは維持 */
-    height: 100vh;
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
-    background-color: #f0f0f0;
-    padding: 20px; /* 上下の余白を追加して、コンテンツが端に寄りすぎないように */
-    box-sizing: border-box; /* paddingがwidth/heightに含まれるように */
-}
-
-#mainContent {
-    /* CSV表示部分のコンテナ。必要に応じてスタイルを追加 */
-    width: 80%; /* 幅を調整 */
-    max-width: 800px; /* 最大幅を設定 */
-    background-color: white;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px; /* CSV表示と入力欄の間にスペースを確保 */
-}
-
-#inputContainer {
-    /* 時刻と曜日入力部分のコンテナ */
-    width: 80%; /* 幅を調整 */
-    max-width: 800px; /* 最大幅を設定 */
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    /* display: none; はJavaScriptで制御するため、CSSからは削除しても良いですが、
-       初期表示制御として残しても問題ありません。 */
-}
-
-p {
-    font-size: 1.2em; /* フォントサイズを調整 */
+    background-color: #f4f7f6; /* 優しい背景色 */
     color: #333;
-    text-align: center; /* メッセージを中央寄せ */
+    line-height: 1.6;
+    display: flex;
+    justify-content: center; /* 中央寄せ */
+    align-items: flex-start; /* 上部に配置 */
+    min-height: 100vh; /* 最小高さをビューポートの高さに */
+    box-sizing: border-box; /* パディングを幅に含める */
 }
 
-h2, h3 {
-    color: #555;
+/* メインコンテナ */
+.container {
+    background-color: #ffffff;
+    padding: 30px 40px;
+    border-radius: 12px; /* 角を丸く */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* 影を強調 */
+    max-width: 700px; /* 最大幅を設定 */
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 20px; /* 上部に少し余白 */
+}
+
+/* アプリケーションタイトル */
+.app-title {
     text-align: center;
+    color: #2c3e50;
+    font-size: 2.2em;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 15px;
 }
 
-pre {
-    background-color: #eee;
+/* ステータスメッセージ */
+.status-message {
+    text-align: center;
+    font-size: 1.1em;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+/* CSV概要表示の切り替え */
+.toggle-section {
+    text-align: center;
+    margin-bottom: 20px;
     padding: 10px;
-    border-radius: 4px;
-    overflow-x: auto; /* 横長になった場合にスクロールバーを表示 */
+    background-color: #e8f5e9; /* 優しい緑の背景 */
+    border-radius: 8px;
+    border: 1px solid #c8e6c9;
 }
 
-label {
-    display: block; /* ラベルをブロック要素にして、入力欄が改行されるように */
-    margin-top: 10px;
-    margin-bottom: 5px;
+.toggle-checkbox {
+    margin-right: 8px;
+    transform: scale(1.2); /* チェックボックスを少し大きく */
+}
+
+.toggle-label {
+    font-weight: bold;
+    color: #2e7d32;
+    cursor: pointer;
+}
+
+.csv-output-section {
+    background-color: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.csv-output-section h2,
+.csv-output-section h3 {
+    color: #444;
+    margin-top: 0;
+    font-size: 1.2em;
+}
+
+.csv-output-section pre {
+    background-color: #e0e0e0;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto; /* 横スクロール可能に */
+    white-space: pre-wrap; /* 長い行を折り返す */
+}
+
+/* 入力セクション */
+.input-section, .result-section {
+    background-color: #ffffff;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 30px; /* 各セクション間に間隔 */
+}
+
+.divider {
+    border: none;
+    border-top: 2px dashed #cfd8dc; /* 点線の区切り線 */
+    margin: 30px 0;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.input-field {
+    width: calc(100% - 20px); /* パディング分を考慮 */
+    padding: 12px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1.0em;
+    box-sizing: border-box; /* パディングを幅に含める */
+    transition: border-color 0.3s ease;
+}
+
+.input-field:focus {
+    border-color: #007bff; /* フォーカス時の色 */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.action-button {
+    display: block; /* ブロック要素にして中央寄せ可能に */
+    width: 100%; /* 幅をいっぱいに */
+    padding: 15px 25px;
+    background-color: #28a745; /* 緑系のボタン */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2);
+}
+
+.action-button:hover {
+    background-color: #218838;
+    transform: translateY(-2px); /* ホバーで少し浮き上がる */
+}
+
+.action-button:active {
+    transform: translateY(0); /* クリックで元の位置に */
+}
+
+/* 結果表示セクション */
+.section-title {
+    color: #2c3e50;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.subsection-title {
+    color: #34495e;
+    font-size: 1.4em;
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+.info-group p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.highlight-info {
+    color: #007bff; /* 青系の強調色 */
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.bus-kind-list {
+    list-style: none; /* デフォルトのリストスタイルを削除 */
+    padding: 0;
+    margin-top: 15px;
+}
+
+.bus-kind-list li {
+    background-color: #f8f9fa; /* 各リストアイテムの背景色 */
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    display: flex; /* flexboxで内容を整列 */
+    justify-content: space-between; /* ラベルと値を左右に配置 */
+    align-items: center;
+}
+
+.bus-kind-list li strong {
+    color: #34495e;
+}
+
+.bus-kind-list li span {
+    color: #007bff; /* 値の強調色 */
     font-weight: bold;
 }
 
-input[type="time"],
-input[type="text"] {
-    width: calc(100% - 20px); /* 親要素の幅からpadding分を引く */
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* paddingを幅に含める */
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container, .input-section, .result-section {
+        padding: 20px 25px;
+        border-radius: 8px;
+    }
+
+    .app-title {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+    }
+
+    .action-button {
+        padding: 12px 20px;
+        font-size: 1em;
+    }
+
+    .section-title {
+        font-size: 1.5em;
+    }
+
+    .subsection-title {
+        font-size: 1.2em;
+    }
 }
 
-hr {
-    border: none;
-    border-top: 1px dashed #ccc; /* 点線で区切り線を表現 */
-    margin: 20px 0; /* 上下のマージン */
+@media (max-width: 480px) {
+    .container, .input-section, .result-section {
+        padding: 15px 20px;
+    }
+
+    .app-title {
+        font-size: 1.5em;
+    }
+
+    .input-field {
+        padding: 10px;
+    }
 }
