@@ -5,18 +5,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputContainer = document.getElementById('inputContainer');
     const currentTimeInput = document.getElementById('current-time');
     const dayOfWeekInput = document.getElementById('dayOfWeek');
-    const currentWeatherInput = document.getElementById('currentWeather'); // 天気入力フィールドを取得
+    const currentWeatherInput = document.getElementById('currentWeather');
+    const searchButton = document.getElementById('searchButton'); // 検索ボタンを取得
 
     // HTML要素の存在チェック
-    if (!messageElement || !csvSummaryOutput || !csvSampleOutput || !inputContainer || !currentTimeInput || !dayOfWeekInput || !currentWeatherInput) {
+    if (!messageElement || !csvSummaryOutput || !csvSampleOutput || !inputContainer ||
+        !currentTimeInput || !dayOfWeekInput || !currentWeatherInput || !searchButton) {
         console.error('HTML要素が見つかりません。必要なIDを持つ要素がHTMLに存在するか確認してください。');
         return;
     }
 
-    let allCsvData = [];
+    let allCsvData = []; // 全てのCSVデータを格納する3次元配列
 
     try {
-        inputContainer.style.display = 'none';
+        inputContainer.style.display = 'none'; // 初期状態では非表示
         messageElement.textContent = `複数のCSVファイルを読み込み中...`;
 
         const startDate = new Date('2025-04-08');
@@ -90,9 +92,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // CSV読み込み完了後、入力欄を表示
         inputContainer.style.display = 'block';
-        console.log('入力された現在時刻:', currentTimeInput.value);
-        console.log('入力された曜日:', dayOfWeekInput.value);
-        console.log('入力された天気:', currentWeatherInput.value); // 天気の値を取得して表示
+
+        // 検索ボタンにイベントリスナーを追加
+        searchButton.addEventListener('click', () => {
+            const time = currentTimeInput.value;
+            const day = dayOfWeekInput.value;
+            const weather = currentWeatherInput.value;
+
+            // 検索関数を呼び出し、取得した値を渡す
+            searchData(time, day, weather, allCsvData); // allCsvDataも渡す
+        });
 
 
     } catch (error) {
@@ -103,3 +112,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         inputContainer.style.display = 'none';
     }
 });
+
+/**
+ * ユーザーが入力した時刻、曜日、天気に基づいてデータを検索する関数。
+ * この関数内に実際の検索ロジックを実装します。
+ * @param {string} time - 入力された現在時刻 (例: "14:30")
+ * @param {string} day - 入力された曜日 (例: "月曜日")
+ * @param {string} weather - 入力された天気 (例: "晴れ")
+ * @param {Array<Array<Array<string>>>} data - 読み込まれた全てのCSVデータ (3次元配列)
+ */
+function searchData(time, day, weather, data) {
+    console.log('--- 検索が実行されました ---');
+    console.log('検索条件:');
+    console.log('時刻:', time);
+    console.log('曜日:', day);
+    console.log('天気:', weather);
+    console.log('CSVデータ:', data); // CSVデータも利用可能
+
+    // ★★★ ここに実際の検索ロジックを実装します ★★★
+    // 例: 特定の条件に合うデータをallCsvDataから探し、結果を画面に表示する
+    // 現在はコンソールにログを出力するだけです。
+    // 例: 特定の時刻のデータを探す場合:
+    // const matchedData = [];
+    // data.forEach(fileData => {
+    //     fileData.forEach(row => {
+    //         if (row[0] === time) { // 仮に時刻がCSVの0列目にあると想定
+    //             matchedData.push(row);
+    //         }
+    //     });
+    // });
+    // console.log('一致したデータ:', matchedData);
+
+    alert(`検索を実行しました！\n時刻: ${time}\n曜日: ${day}\n天気: ${weather}\n\n検索ロジックはまだ実装されていません。`);
+}
